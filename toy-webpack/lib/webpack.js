@@ -13,24 +13,23 @@ module.exports = class Webpack {
   async run() {
     this.parse(this.entry).then(() => {
       console.log(this.modules);
-
       this.emit();
-      // console.log(this.modules);
     });
-    // setTimeout(() => {
-    // }, 1000);
   }
-
+  /**
+   * 解析JS
+   */
   parse(entry, relativePath) {
     return new Promise(async (resolve, reject) => {
+      // 读取文件
       const code = fs.readFileSync(entry, "utf-8");
-      // console.log(code);
+
+      // 构建ast
       const ast = parse(code, {
         sourceType: "module",
       });
 
-      //   console.log(ast.program.body);
-
+      // 处理dependencies
       const waiting = [];
 
       for (let node of ast.program.body) {
@@ -42,12 +41,13 @@ module.exports = class Webpack {
       }
 
       const dependencies = {};
-      const res = await Promise.all(waiting)
+      const res = await Promise.all(waiting);
 
       for (let each of res) {
         dependencies[each.relativePath] = each.entry;
       }
 
+      // 从ast构建代码
       transformFromAst(
         ast,
         null,
@@ -62,7 +62,9 @@ module.exports = class Webpack {
       );
     });
   }
-
+  /**
+   * 输出文件
+   */
   emit() {
     const code = `
         (function(graph){
